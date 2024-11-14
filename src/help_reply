@@ -1,0 +1,7 @@
+Die Commands sind:
+!todo <todo Nachricht>: füge Todo hinzu;
+!todos : Liste alle todos auf;
+!check [nummer]: hake ein todo ab. Wenn keine Nummer angegeben ist, wird die erste Aufgabe abgehakt.
+!flush : resette ALLE todo nachrichten (nur mods)
+!savetodos : sichere alle todos auf der Festplatte
+Viel Spaß!
