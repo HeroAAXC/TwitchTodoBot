@@ -33,7 +33,7 @@ Diese musst du selbst bei Twitch holen.
 
 ### mods.json
 
-Hier werden alle mods (in kleinbuchstaben und UTF-8 codiert), die den todo-bot resetten können oder die Daten auf der Festplatte abspeichern können im json Format angegeben.
+Hier werden alle mods (in Kleinbuchstaben und UTF-8 codiert), die den todo-bot resetten können oder die Daten auf der Festplatte abspeichern können im json Format angegeben.
 Diese können einfach mit dem editor deines Vertrauens verändert werden.
 
 #### Beispiel
