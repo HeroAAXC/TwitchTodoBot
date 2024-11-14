@@ -14,6 +14,7 @@ In diese kommt folgender Inhalt:
 ```bash
 ./TodoBot.exe
 ```
+Nun kannst du diese Datei doppelklicken. Dabei öffnet sich ein Fenster. Wenn du den Bot ausschalten möchtest, kannst du das Fenster einfach schließen. (Bitte speichere vorher mit dem Kommando !savetodos im Twitch Chat die todos, um auch beim nächsten Start alle todos wieder anzeigen lassen zu können)
 
 ## Konfiguration / config files
 
