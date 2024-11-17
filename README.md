@@ -16,11 +16,11 @@ In diese kommt folgender Inhalt:
 ```
 Nun kannst du diese Datei doppelklicken. Dabei öffnet sich ein Fenster. Wenn du den Bot ausschalten möchtest, kannst du das Fenster einfach schließen. (Bitte speichere vorher mit dem Kommando !savetodos im Twitch Chat die todos, um auch beim nächsten Start alle todos wieder anzeigen lassen zu können)
 
-## Konfiguration / config files
-
 ## Einfache Konfiguration
-lediglich die credentials file muss über Datein bearbeitet werden.
+Lediglich die credentials file muss über Datein bearbeitet werden.
 Der Rest ist über das WebUI erreichbar unter [dem localhost auf Port 300](http://localhost:3000/) erreichbar (wenn der Bot aktiv ist, einfach klicken).
+
+## Konfiguration / config files
 
 ### channels.csv
 
