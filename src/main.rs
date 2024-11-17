@@ -1,46 +1,34 @@
-use std::collections::{HashMap, HashSet};
-use std::io::{Error, ErrorKind};
 use std::sync::Arc;
 use std::time::Duration;
 
-use config::{gen_mod_set, load_channels_to_watch, CredentialsFile};
-use file_names::TODO_SAVE;
-use handle_commands::{
-    handle_add_todo, handle_check_command, handle_list_todos, split_command_message,
-};
+use channel_joiner::ChannelJoiner;
+use client_sender::{spawn_sender_worker, ClientSender};
+use config::{load_data, save_data, CredentialsFile, ModSet};
 use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Root};
 use log4rs::encode::pattern::PatternEncoder;
-use tokio::sync::Mutex;
+use tokio::select;
+use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::sync::{mpsc, Mutex};
 use tokio::time::sleep;
 use twitch_irc::login::StaticLoginCredentials;
-use twitch_irc::message::ServerMessage;
-use twitch_irc::{message, TwitchIRCClient};
+use twitch_irc::TwitchIRCClient;
 use twitch_irc::{ClientConfig, SecureTCPTransport};
+use web::spawn_axum_worker;
 
+mod bot;
+mod channel_joiner;
+mod client_sender;
+mod communication;
 mod config;
 mod file_names;
-mod handle_commands;
+mod web;
 
 /// Asynchron programmierter todo bot für Twitch
 /// (Wichtig:) Von dem Asynchronen nicht beeindrucken lassen,
 /// wichtig zum lesen ist nur, dass alle async functions erst ausgeführt werden,
 /// wenn hinter ihnen ein ".await" aufgerufen wird (momentan ist eh nichts glechzeitig)
 ///
-
-pub type Data = Arc<Mutex<HashMap<String, Vec<String>>>>;
-
-/*
-    hier sind die konstanten abgebildet, die die Kommandos (ohne Ausrufezeichen repräsentieren)
-*/
-const LIST_TODO_COMMAND: &str = "todos";
-const ADD_TODO_COMMAND: &str = "todo";
-const CHECK_TODO_COMMAND: &str = "check";
-const TODO_HELP: &str = "todohelp";
-const FLUSH_TODOS: &str = "todoflush";
-const SAVE_TODO: &str = "savetodos";
-
-const HELP_REPLY: &str = include_str!("./help_reply");
 
 #[tokio::main]
 pub async fn main() {
@@ -59,148 +47,66 @@ pub async fn main() {
         .unwrap();
     log4rs::init_config(config).unwrap();
 
-    // die loop sollte "eigentlich" nur relevant werden, wenn sie nur wieder ausgeführt wird, wenn die innere Funktion abstürzt
-    // solange nichts abstürzt blockt die aufgerufene Funktion loop_cycle die Ausführung
     loop {
         match loop_cycle().await {
             Err(e) => log::error!("Error: {e}"),
-            Ok(()) => log::error!("internal error!"),
+            Ok(r) => match r {
+                true => return,
+                false => log::error!("internal error!"),
+            },
         }
-        // warte 15 Minuten bis der Bot erneut versucht wird, zu starten (bspw. bei Internetausfall)
-        sleep(Duration::from_secs(900)).await;
+        sleep(Duration::from_secs(60)).await;
     }
 }
 
-pub async fn loop_cycle() -> anyhow::Result<()> {
+pub async fn loop_cycle() -> anyhow::Result<bool> {
     // die statischen Anmeldedaten aus der credentials.json werden geladen
     let config = ClientConfig::new_simple(CredentialsFile::load().await.into());
-    let (mut incoming_messages, client) =
+    let (incoming_messages, client) =
         TwitchIRCClient::<SecureTCPTransport, StaticLoginCredentials>::new(config);
 
-    let client = Arc::new(client);
+    let client = Arc::new(Mutex::new(client));
 
-    // hier werden die Daten gespeichert
-    let data: Arc<Mutex<HashMap<String, Vec<String>>>> = Arc::new(Mutex::new(load_data().await?));
+    let mods = Arc::new(Mutex::new(ModSet::load().await));
 
-    let mods = gen_mod_set().await.unwrap();
+    let (send, recv) = mpsc::channel(30);
+    let sender_worker = spawn_sender_worker(ClientSender::new(client.clone(), recv, 3));
 
-    let client_clone = client.clone();
+    let data = load_data().await?;
 
-    let join_handle = tokio::spawn(async move {
-        while let Some(message) = incoming_messages.recv().await {
-            match message {
-                message::ServerMessage::Privmsg(msg) => {
-                    if (&msg).message_text.starts_with("!") {
-                        let (cmd, text) = split_command_message(msg.message_text.clone());
+    let bot_worker = bot::create_bot_worker(incoming_messages, send, data.clone(), mods.clone());
 
-                        // hier werden die einzelnen Kommandos gecheckt
-                        // wenn eines der Kommandos (bspw. ADD_TODO_COMMAND) am Anfang steht, werden diese abgehandelt
+    let channel_joiner = Arc::new(Mutex::new(ChannelJoiner::load(client.clone()).await));
 
-                        match cmd.as_str() {
-                            ADD_TODO_COMMAND => {
-                                log::info!("adding command: {:?}", &text);
-                                if let Some(response) =
-                                    handle_add_todo(text, data.clone(), &msg).await
-                                {
-                                    sleep(Duration::from_secs(1)).await;
-                                    client_clone
-                                        .privmsg(msg.channel_login.clone(), response)
-                                        .await
-                                        .unwrap();
-                                }
-                            }
-                            LIST_TODO_COMMAND => {
-                                if let Some(response) =
-                                    handle_list_todos(text, data.clone(), &msg).await
-                                {
-                                    sleep(Duration::from_secs(1)).await;
-                                    client_clone
-                                        .privmsg(msg.channel_login.clone(), response)
-                                        .await
-                                        .unwrap();
-                                }
-                            }
-                            CHECK_TODO_COMMAND => {
-                                log::info!("checked command: {:?}", &text);
-                                if let Some(response) =
-                                    handle_check_command(text, data.clone(), &msg).await
-                                {
-                                    sleep(Duration::from_secs(1)).await;
-                                    client_clone
-                                        .privmsg(msg.channel_login.clone(), response)
-                                        .await
-                                        .unwrap();
-                                }
-                            }
-                            TODO_HELP => {
-                                sleep(Duration::from_secs(1)).await;
-                                client_clone
-                                    .privmsg(
-                                        msg.channel_login.clone(),
-                                        HELP_REPLY.to_owned().replace("\n", "  "),
-                                    )
-                                    .await
-                                    .unwrap();
-                            }
-                            FLUSH_TODOS => {
-                                if mods.contains(&msg.sender.login) {
-                                    log::warn!(
-                                        "flushed data: {}\n",
-                                        data.lock()
-                                            .await
-                                            .drain()
-                                            .map(|e| format!("[{}, {:?}]", e.0, e.1))
-                                            .collect::<String>()
-                                    );
-                                }
-                            }
-                            SAVE_TODO => {
-                                if mods.contains(&msg.sender.login) {
-                                    match save_data(&data).await {
-                                        Ok(_) => log::warn!("saved data"),
-                                        Err(e) => log::error!("Error when saving todos: {e}"),
-                                    }
-                                }
-                            }
-                            _ => (),
-                        }
-                    }
-                }
-                ServerMessage::Notice(s) => {
-                    // diese art von Nachricht wird vom server zurückgegeben, wenn etwas beim senden schief gelaufen ist
-                    // (bspw. wenn die Anmeldung nicht funktioniert hat oder zu schnell gesendet wurde)
-                    log::error!("{:?}", s)
-                }
-                _ => (),
-            }
-        }
+    let (stop_sender, mut stop_recv): (Sender<()>, Receiver<()>) = mpsc::channel(1);
+
+    let stop_sender = Arc::new(Mutex::new(stop_sender));
+
+    let web_worker = spawn_axum_worker(channel_joiner.clone(), mods, stop_sender);
+
+    let non_blocking = tokio::spawn(async move {
+        let (web, bot, send) = futures::join!(web_worker, bot_worker, sender_worker);
+        web.unwrap();
+        bot.unwrap();
+        send.unwrap();
     });
 
-    // alle Räume, die durchscannt werden sollen, werden betreten (siehe IRC Protokoll)
-    for channel in load_channels_to_watch().await {
-        client.join(channel).unwrap();
+    let blocking_thread = tokio::spawn(async move {
+        let _ = stop_recv.recv().await.unwrap();
+        println!("uwu");
+        save_data(&data).await.unwrap();
+    });
+
+    select! {
+        test = blocking_thread => {
+            test.unwrap();
+            return Ok(true);
+        }
+        test = non_blocking => {
+            test.unwrap();
+        }
+
     }
 
-    // blockiere den thread und führe den Code oben aus, wenn eine Nachricht hereinkommt
-    join_handle.await.unwrap();
-    Ok(())
-}
-
-async fn load_data() -> anyhow::Result<HashMap<String, Vec<String>>> {
-    let save_file = tokio::fs::read_to_string(TODO_SAVE).await;
-
-    let file_string = match save_file {
-        Ok(r) => r,
-        Err(_) => return Ok(HashMap::new()),
-    };
-
-    Ok(serde_json::from_str(file_string.as_str())?)
-}
-
-async fn save_data(data: &Data) -> anyhow::Result<()> {
-    // das Datenobjekt muss in eine einfache Hashmap verwandelt werden, damit serde_json diesen in json verwandeln kann
-    let data = data.lock().await.clone();
-    let file_content = serde_json::to_string(&data)?;
-    tokio::fs::write(TODO_SAVE, &file_content.as_str()).await?;
-    Ok(())
+    Ok(false)
 }
