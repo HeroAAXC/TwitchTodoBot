@@ -1,6 +1,6 @@
 use twitch_irc::message::PrivmsgMessage;
 
-use crate::Data;
+use super::Data;
 
 pub async fn handle_list_todos(
     text: Option<String>,
@@ -18,7 +18,7 @@ pub async fn handle_list_todos(
             }
         }
     };
-    Some(format_message_reply(msg, data.lock().await.get(sender)))
+    Some(format_message_reply(data.lock().await.get(sender)))
 }
 
 pub fn split_command_message(message: String) -> (String, Option<String>) {
@@ -47,10 +47,11 @@ pub async fn handle_add_todo(
     None
 }
 
-pub fn format_message_reply(msg: &PrivmsgMessage, todos: Option<&Vec<String>>) -> String {
+pub fn format_message_reply(todos: Option<&Vec<String>>) -> String {
     match todos {
         None => {
-            format!("@{} Du hast noch keine todos hinzugefügt, du kannst mit !todo <Nachricht> todos speichern", msg.sender.login)
+            "Du hast noch keine todos hinzugefügt, du kannst mit !todo <Nachricht> todos speichern"
+                .to_owned()
         }
         Some(todos) => {
             let mut todos_str = String::new();
@@ -61,7 +62,7 @@ pub fn format_message_reply(msg: &PrivmsgMessage, todos: Option<&Vec<String>>) -
                 todos_str.push(' ');
                 index += 1;
             }
-            format!("@{} Du hast folgende todos: {todos_str}", msg.sender.login)
+            format!("Du hast folgende todos: {todos_str}")
         }
     }
 }
