@@ -1,0 +1,195 @@
+<!doctype html>
+    <head>
+        <meta charset="UTF-8" />
+        <style>
+            /* Grundlegende Stile */
+            body {
+                font-family: Arial, sans-serif;
+                background-color: #f4f4f9;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+            }
+
+            /* Kachel-Container */
+            .kachel {
+                width: 100%; /* Feste Breite */
+                height: 100%; /* Feste Höhe */
+                background-color: #fff;
+                border-radius: 10px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                transition:
+                    transform 0.3s ease,
+                    box-shadow 0.3s ease;
+                box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
+            }
+
+            /* Kachel-Bild */
+            .kachel-bild {
+                width: 100%;
+
+                vertical-align: middle;
+                object-fit: cover;
+                background: rgb(9, 121, 61);
+                background: linear-gradient(
+                    90deg,
+                    rgba(9, 121, 61, 1) 0%,
+                    rgba(115, 20, 166, 1) 45%,
+                    rgba(115, 20, 166, 1) 54%,
+                    rgba(0, 212, 255, 1) 100%
+                );
+                color: white;
+                font-weight: bold;
+                font-size: 3vh;
+                padding-top: 2vh;
+                padding-bottom: 2vh;
+                text-align: center;
+                line-height: 50px;
+            }
+
+            /* Kachel-Inhalt */
+            .kachelinhalt {
+                text-align: left;
+                padding-top: 10px;
+                padding-left: 0px;
+                padding-right: 0px;
+                overflow-y: scroll;
+                overflow-x: hidden;
+                height: 100%;
+                color: #666;
+                width: 100%;
+                margin: 0px;
+                background-color: #222226;
+                color: #ebdfdf;
+
+                scrollbar-color: #0a4c95 #c2d2e4;
+                scrollbar-width: thin;
+            }
+
+            .todomessage {
+                color: whitesmoke;
+                font-size: 3vh;
+                width: 100%;
+                display: flex;
+                flex-direction: row;
+            }
+            .todomessage div {
+                padding-left: 2vw;
+                color: whitesmoke;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="kachel">
+            <div alt="Kachel-Bild" class="kachel-bild">Todos</div>
+            <ul class="kachelinhalt" id="todos"></ul>
+        </div>
+        <script>
+            function registerSSE(url, onMessageCallback, onErrorCallback) {
+                // Erstelle eine neue EventSource-Instanz
+                const eventSource = new EventSource(url);
+
+                // Registriere den Callback für eingehende Nachrichten
+                eventSource.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    if (onMessageCallback) {
+                        onMessageCallback(event);
+                    }
+                };
+
+                // Behandle spezielle Events, wenn der Server sie sendet
+                eventSource.addEventListener("customEvent", (event) => {
+                    console.log("Spezifisches Event empfangen:", event.data);
+                    // Füge hier spezifische Logik für das Event hinzu
+                });
+
+                // Fehlerbehandlung
+                eventSource.onerror = (error) => {
+                    console.error("Fehler bei SSE:", error);
+                    if (onErrorCallback) {
+                        onErrorCallback(error);
+                    }
+                    // Automatisch schließen, falls die Verbindung fehlerhaft ist
+                    if (eventSource.readyState === EventSource.CLOSED) {
+                        eventSource.close();
+                    }
+                };
+
+                // Funktion zum manuellen Schließen der Verbindung
+                return {
+                    close: () => {
+                        console.log("SSE-Verbindung wird geschlossen");
+                        eventSource.close();
+                    },
+                };
+            }
+
+            loadInitialTodos();
+
+            // Beispielnutzung
+            const sseHandle = registerSSE(
+                "http://localhost:3000/todos_sse",
+                (message) => {
+                    const json = JSON.parse(message.data);
+
+                    if (json.hasOwnProperty("StatusUpdate")) {
+                        json.StatusUpdate.new_todos.forEach((e) => {
+                            addTodo(e[1], e[2], e[0]);
+                        });
+
+                        json.StatusUpdate.checks.forEach((e) => {
+                            let to_remove = document.getElementById(e);
+                            to_remove.remove();
+                        });
+                    }
+                },
+                (error) => {
+                    console.error("Fehler beim Empfangen der Daten:", error);
+                },
+            );
+            function loadInitialTodos() {
+                const URL = "http://localhost:3000/get_todos";
+                fetch(URL, {
+                    method: "GET",
+                    headers: {
+                        "content-type": "application/json",
+                    },
+                })
+                    .then((resp) => resp.json())
+                    .then((resp2) => {
+                        console.log(resp2);
+                        resp2.forEach((e) => {
+                            e[1].forEach((message) =>
+                                addTodo(e[0], message[0], message[1]),
+                            );
+                        });
+                    })
+                    .catch((e) => console.error(e));
+            }
+
+            function addTodo(user, todotext, id) {
+                const list = document.getElementById("todos");
+                let le = document.createElement("li");
+
+                let usernameEl = document.createElement("div");
+                usernameEl.textContent = user;
+
+                let todoEl = document.createElement("div");
+                todoEl.textContent = todotext;
+
+                le.appendChild(usernameEl);
+                le.appendChild(todoEl);
+                le.id = id;
+
+                le.classList.add("todomessage");
+                list.appendChild(le);
+            }
+        </script>
+    </body>
+</html>

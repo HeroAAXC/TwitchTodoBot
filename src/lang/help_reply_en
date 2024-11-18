@@ -1,0 +1,7 @@
+The commands are:
+!todo <todo message>: add todo;
+!todos : List all tasks;
+!check [number]: check off a todo. If no number is given, the first task is checked off.
+!flush: reset ALL todo messages (mods only)
+!savetodos: save all todos on the hard drive
+Have fun!

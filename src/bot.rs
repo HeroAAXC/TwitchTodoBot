@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{collections::HashMap, sync::Arc};
 
 use handle_commands::{
     handle_add_todo, handle_check_command, handle_list_todos, split_command_message,
@@ -13,11 +13,14 @@ use tokio::{
 use twitch_irc::message::{self, ServerMessage};
 
 use crate::{
-    communication::BotMessage,
+    communication::{BotMessage, TodoUpdate},
     config::{save_data, ModSet},
+    lang::lang,
 };
 
 mod handle_commands;
+
+pub use handle_commands::hash_message;
 
 pub type Data = Arc<Mutex<HashMap<String, Vec<String>>>>;
 
@@ -31,13 +34,12 @@ const TODO_HELP: &str = "todohelp";
 const FLUSH_TODOS: &str = "todoflush";
 const SAVE_TODO: &str = "savetodos";
 
-const HELP_REPLY: &str = include_str!("./help_reply");
-
 pub fn create_bot_worker(
     mut incoming_messages: UnboundedReceiver<ServerMessage>,
     client: Sender<BotMessage>,
     data: Data,
     mods: Arc<Mutex<ModSet>>,
+    todo_subscribers: Arc<Mutex<Vec<Sender<TodoUpdate>>>>,
 ) -> JoinHandle<()> {
     tokio::spawn(async move {
         // hier werden die Daten gespeichert
@@ -54,14 +56,14 @@ pub fn create_bot_worker(
                         if let Some(response) = match cmd.as_str() {
                             ADD_TODO_COMMAND => {
                                 log::info!("adding command: {:?}", &text);
-                                handle_add_todo(text, data.clone(), &msg).await
+                                handle_add_todo(text, data.clone(), &msg, &todo_subscribers).await
                             }
                             LIST_TODO_COMMAND => handle_list_todos(text, data.clone(), &msg).await,
                             CHECK_TODO_COMMAND => {
                                 log::info!("checked command: {:?}", &text);
-                                handle_check_command(text, data.clone(), &msg).await
+                                handle_check_command(text, data.clone(), &msg, &todo_subscribers).await
                             }
-                            TODO_HELP => Some(HELP_REPLY.to_owned()),
+                            TODO_HELP => Some(lang::HELP_REPLY.to_owned()),
                             FLUSH_TODOS => {
                                 if mods.lock().await.set.contains(&msg.sender.login) {
                                     log::warn!(
@@ -73,25 +75,22 @@ pub fn create_bot_worker(
                                             .collect::<String>()
                                     );
                                 }
-                                Some("flushed todos!".to_owned())
+                                Some(lang::FLUSHED_TODOS.to_owned())
                             }
                             SAVE_TODO => {
                                 if mods.lock().await.set.contains(&msg.sender.login) {
                                     match save_data(&data).await {
                                         Ok(_) => {
                                             log::warn!("saved data");
-                                            Some("saved data!".to_owned())
+                                            Some(lang::SAVED_DATA.to_owned())
                                         }
                                         Err(e) => {
                                             log::error!("Error when saving todos: {e}");
-                                            Some(
-                                                "error when saving data, please look into logs"
-                                                    .to_owned(),
-                                            )
+                                            Some(lang::ERROR_WHEN_SAVING_DATA.to_owned())
                                         }
                                     }
                                 } else {
-                                    Some("you are not allowed to do that!".to_owned())
+                                    Some(lang::NO_PERMISSION.to_owned())
                                 }
                             }
                             _ => None,

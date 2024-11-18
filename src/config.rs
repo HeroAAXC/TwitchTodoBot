@@ -9,7 +9,7 @@ use twitch_irc::login::{CredentialsPair, StaticLoginCredentials};
 
 use crate::{
     bot::Data,
-    file_names::{CHANNELS_TO_WATCH, CREDENTIALS, MODS, TODO_SAVE},
+    file_names::{CREDENTIALS, MODS, TODO_SAVE},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -89,18 +89,4 @@ impl ModSet {
         self.set.clear();
         self.set = HashSet::from_iter(mods.into_iter());
     }
-}
-
-pub async fn gen_mod_set() -> anyhow::Result<HashSet<String>> {
-    let file_content = match tokio::fs::read_to_string(MODS).await {
-        Ok(r) => r,
-        Err(_) => {
-            // wenn die file nicht gelesen werden kann, erstelle eine neue und gib eine default config mit vanimio zurück
-            let mut hashset = HashSet::new();
-            hashset.insert("vanimio".to_owned());
-            let _ = tokio::fs::write(MODS, serde_json::to_string(&hashset).unwrap()).await;
-            return Ok(hashset);
-        }
-    };
-    Ok(serde_json::from_str(&file_content.as_str())?)
 }

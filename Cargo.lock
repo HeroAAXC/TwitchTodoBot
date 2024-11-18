@@ -1272,7 +1272,7 @@ dependencies = [
 
 [[package]]
 name = "twitch_todo_bot"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "anyhow",
  "axum",
@@ -1282,6 +1282,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
+ "tokio-stream",
  "tower",
  "tower-http",
  "twitch-irc",
