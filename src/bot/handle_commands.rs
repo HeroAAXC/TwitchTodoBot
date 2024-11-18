@@ -1,4 +1,14 @@
+use std::sync::Arc;
+
+use tokio::sync::{mpsc::Sender, Mutex};
 use twitch_irc::message::PrivmsgMessage;
+
+use std::hash::{DefaultHasher, Hasher};
+
+use crate::{
+    communication::TodoUpdate,
+    lang::lang::{self, YOUR_TODOS},
+};
 
 use super::Data;
 
@@ -34,6 +44,7 @@ pub async fn handle_add_todo(
     text: Option<String>,
     data: Data,
     msg: &PrivmsgMessage,
+    todo_subscribers: &Arc<Mutex<Vec<Sender<TodoUpdate>>>>,
 ) -> Option<String> {
     if let Some(text) = text {
         let mut data_locked = data.lock().await;
@@ -43,16 +54,27 @@ pub async fn handle_add_todo(
                 data_locked.insert(msg.sender.login.clone(), vec![text.to_owned()]);
             }
         }
+
+        let mut subscriber_lock = todo_subscribers.lock().await;
+
+        let todo_update = TodoUpdate::AddTodo {
+            user: msg.sender.login.clone(),
+            uuid: hash_message(&msg.sender.login, &text),
+            todo_message: text,
+        };
+
+        for subscriber in subscriber_lock.clone().into_iter() {
+            let _ = subscriber.send(todo_update.clone()).await;
+        }
+        subscriber_lock.retain(|e| !e.is_closed());
+        drop(subscriber_lock);
     }
     None
 }
 
 pub fn format_message_reply(todos: Option<&Vec<String>>) -> String {
     match todos {
-        None => {
-            "Du hast noch keine todos hinzugefügt, du kannst mit !todo <Nachricht> todos speichern"
-                .to_owned()
-        }
+        None => lang::NO_TODOS_ADDEDD_YET.to_owned(),
         Some(todos) => {
             let mut todos_str = String::new();
             let mut index = 1;
@@ -62,7 +84,7 @@ pub fn format_message_reply(todos: Option<&Vec<String>>) -> String {
                 todos_str.push(' ');
                 index += 1;
             }
-            format!("Du hast folgende todos: {todos_str}")
+            format!("{YOUR_TODOS} {todos_str}")
         }
     }
 }
@@ -71,6 +93,7 @@ pub async fn handle_check_command(
     text: Option<String>,
     data: Data,
     msg: &PrivmsgMessage,
+    todo_subscribers: &Arc<Mutex<Vec<Sender<TodoUpdate>>>>,
 ) -> Option<String> {
     let index: usize = match text {
         Some(s) => match s.parse() {
@@ -87,13 +110,31 @@ pub async fn handle_check_command(
     };
     if let Some(user_todos) = data.lock().await.get_mut(&msg.sender.login) {
         if index >= user_todos.len() {
-            return Some("Die Tasknummer existiert nicht :( (Bitte beachte, dass beim Löschen die Nummern weiter rutschen)".to_owned());
+            return Some(lang::TASK_INDEX_DOESNT_EXIST.to_owned());
         }
         let checked_todo = user_todos.remove(index);
+
+        let mut subscriber_lock = todo_subscribers.lock().await;
+        let todo_update = TodoUpdate::CheckTodo(hash_message(&msg.channel_login, &checked_todo));
+
+        for subscriber in subscriber_lock.clone().into_iter() {
+            let _ = subscriber.send(todo_update.clone()).await;
+        }
+        subscriber_lock.retain(|e| !e.is_closed());
+
         return Some(format!(
-            "{} hat {checked_todo} geschafft :D ",
-            msg.sender.login
+            "{} {} {checked_todo} {}",
+            msg.sender.login,
+            lang::FINISHED_TODO.0,
+            lang::FINISHED_TODO.1
         ));
     }
     None
+}
+
+pub fn hash_message(name: &String, text: &String) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    hasher.write(text.as_bytes());
+    hasher.write(name.as_bytes());
+    hasher.finish()
 }
