@@ -1,6 +1,10 @@
 # Twitch ToDo Bot
 
+![Admin Panel](https://raw.githubusercontent.com/HeroAAXC/TwitchTodoBotImages/f31658cc7d2fd32618851a7582806333ae2a0287/AdminPanel.png "Twitch Todo Bot Admin Panel")
+
 Bei Fragen oder Problemen einfach an mich wenden (per github issue oder Discord).
+
+![OBS Gui](https://raw.githubusercontent.com/HeroAAXC/TwitchTodoBotImages/f31658cc7d2fd32618851a7582806333ae2a0287/todo_chat.png "OBS Gui")
 
 ## Installation
 
