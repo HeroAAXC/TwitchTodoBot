@@ -12,17 +12,30 @@ Lade das Programm (TodoBot.exe) unter releases herunter und kopiere as an den ge
 
 Wichtig: die Dateien credentials.json und channels.csv MÜSSEN vorhanden sein.
 
-Zum starten: Erstelle im selben Verzeichnis, in das du die .exe kopiert hast eine Datei namens "Start.bash".
+Zum starten: Doppelklicke die Datei. Stoppen kannst du den Bot im Admin Panel, siehe Einfache Konfiguration.
 
-In diese kommt folgender Inhalt:
-```bash
-./TodoBot.exe
-```
-Nun kannst du diese Datei doppelklicken. Dabei öffnet sich ein Fenster. Wenn du den Bot ausschalten möchtest, kannst du das Fenster einfach schließen. (Bitte speichere vorher mit dem Kommando !savetodos im Twitch Chat die todos, um auch beim nächsten Start alle todos wieder anzeigen lassen zu können)
 
 ## Einfache Konfiguration
 Lediglich die credentials file muss über Datein bearbeitet werden.
 Der Rest ist über das WebUI erreichbar unter [dem localhost auf Port 300](http://localhost:3000/) erreichbar (wenn der Bot aktiv ist, einfach klicken).
+
+## Einbindung in OBS
+Um das Todo Panel in OBS anzuzeigen, musst du folgende bebilderte Schritt-für-Schritt-Anleitung beachten:
+
+![Quelle öffnen](https://raw.githubusercontent.com/HeroAAXC/TwitchTodoBotImages/refs/heads/main/browser_source1.png "erstelle eine neue Quelle")
+Erstelle eine neue Quelle
+
+![Browser Quelle hinzufügen](https://raw.githubusercontent.com/HeroAAXC/TwitchTodoBotImages/refs/heads/main/browser_source2.png "füge eine Browser Quelle hinzu")
+Füge eine Browser Quelle hinzu.
+
+![Erselle die Quelle](https://raw.githubusercontent.com/HeroAAXC/TwitchTodoBotImages/refs/heads/main/browser_source3.png "erstelle und benenne die neue Quelle")
+Erstelle und benenne die neue Quelle. Achte darauf, dass ein Haken bei "Quelle sichtbar" ist.
+
+![Konfiguration innerhalb OBS](https://raw.githubusercontent.com/HeroAAXC/TwitchTodoBotImages/refs/heads/main/browser_source4.png "Konfiguration innerhalb OBS")
+Gib bei Url http://localhost:3000/todos ein. Breite und Höhe kannst du nach belieben anpassen. Wenn die Schrift innerhalb des Fensters zu groß ist, musst du die Höhe und Breite in diesem Fenster vergrößern und das gesamte Panel im Hauptfenster kleiner skalieren (drag and drop).
+Achte darauf, dass _KEIN_ Haken bei "Aus Datei" ist.
+Klicke anschließend auf Okay. Wenn dein Bot bereits läuft siehst du nun das todo Panel.
+
 
 ## Konfiguration / config files
 
