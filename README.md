@@ -3,6 +3,7 @@
 ![Admin Panel](https://raw.githubusercontent.com/HeroAAXC/TwitchTodoBotImages/f31658cc7d2fd32618851a7582806333ae2a0287/AdminPanel.png "Twitch Todo Bot Admin Panel")
 
 If you have questions or issues, feel free to contact me (via GitHub issue or Discord).
+[German version can be found here.](./README_de.md)
 
 ![OBS Gui](https://raw.githubusercontent.com/HeroAAXC/TwitchTodoBotImages/f31658cc7d2fd32618851a7582806333ae2a0287/todo_chat.png "OBS Gui")
 
