@@ -2,49 +2,48 @@
 
 ![Admin Panel](https://raw.githubusercontent.com/HeroAAXC/TwitchTodoBotImages/f31658cc7d2fd32618851a7582806333ae2a0287/AdminPanel.png "Twitch Todo Bot Admin Panel")
 
-Bei Fragen oder Problemen einfach an mich wenden (per github issue oder Discord).
+If you have questions or issues, feel free to contact me (via GitHub issue or Discord).
 
 ![OBS Gui](https://raw.githubusercontent.com/HeroAAXC/TwitchTodoBotImages/f31658cc7d2fd32618851a7582806333ae2a0287/todo_chat.png "OBS Gui")
 
 ## Installation
 
-Lade das Programm (TodoBot.exe) unter releases herunter und kopiere as an den gewünschten Ort.
+Download the program (`TodoBot.exe`) from the releases and copy it to the desired location.
 
-Wichtig: die Dateien credentials.json und channels.csv MÜSSEN vorhanden sein.
+Important: The files `credentials.json` and `channels.csv` MUST be present.
 
-Zum starten: Doppelklicke die Datei. Stoppen kannst du den Bot im Admin Panel, siehe Einfache Konfiguration.
+To start: Double-click the file. You can stop the bot via the admin panel; see **Easy Configuration**.
 
+## Easy Configuration
+Only the credentials file needs to be edited manually.  
+The rest is accessible via the WebUI at [localhost on port 300](http://localhost:3000/) (if the bot is running, just click the link).
 
-## Einfache Konfiguration
-Lediglich die credentials file muss über Datein bearbeitet werden.
-Der Rest ist über das WebUI erreichbar unter [dem localhost auf Port 300](http://localhost:3000/) erreichbar (wenn der Bot aktiv ist, einfach klicken).
+## Integration with OBS
+To display the ToDo panel in OBS, follow these illustrated step-by-step instructions:
 
-## Einbindung in OBS
-Um das Todo Panel in OBS anzuzeigen, musst du folgende bebilderte Schritt-für-Schritt-Anleitung beachten:
+![Create Source](https://raw.githubusercontent.com/HeroAAXC/TwitchTodoBotImages/refs/heads/main/browser_source1.png "Create a new source")
+Create a new source.
 
-![Quelle öffnen](https://raw.githubusercontent.com/HeroAAXC/TwitchTodoBotImages/refs/heads/main/browser_source1.png "erstelle eine neue Quelle")
-Erstelle eine neue Quelle
+![Add Browser Source](https://raw.githubusercontent.com/HeroAAXC/TwitchTodoBotImages/refs/heads/main/browser_source2.png "Add a browser source")
+Add a browser source.
 
-![Browser Quelle hinzufügen](https://raw.githubusercontent.com/HeroAAXC/TwitchTodoBotImages/refs/heads/main/browser_source2.png "füge eine Browser Quelle hinzu")
-Füge eine Browser Quelle hinzu.
+![Create Source](https://raw.githubusercontent.com/HeroAAXC/TwitchTodoBotImages/refs/heads/main/browser_source3.png "Create and name the new source")
+Create and name the new source. Make sure the "Visible" checkbox is checked.
 
-![Erselle die Quelle](https://raw.githubusercontent.com/HeroAAXC/TwitchTodoBotImages/refs/heads/main/browser_source3.png "erstelle und benenne die neue Quelle")
-Erstelle und benenne die neue Quelle. Achte darauf, dass ein Haken bei "Quelle sichtbar" ist.
+![Configure in OBS](https://raw.githubusercontent.com/HeroAAXC/TwitchTodoBotImages/refs/heads/main/browser_source4.png "Configure within OBS")
+Enter the URL `http://localhost:3000/todos`. Adjust width and height as needed.  
+If the text inside the window is too large, increase the width and height here and scale the entire panel down in the main window (drag and drop).  
+Make sure _NOT_ to check the "Local file" box.  
+Click OK. If your bot is already running, you'll now see the ToDo panel.
 
-![Konfiguration innerhalb OBS](https://raw.githubusercontent.com/HeroAAXC/TwitchTodoBotImages/refs/heads/main/browser_source4.png "Konfiguration innerhalb OBS")
-Gib bei Url http://localhost:3000/todos ein. Breite und Höhe kannst du nach belieben anpassen. Wenn die Schrift innerhalb des Fensters zu groß ist, musst du die Höhe und Breite in diesem Fenster vergrößern und das gesamte Panel im Hauptfenster kleiner skalieren (drag and drop).
-Achte darauf, dass _KEIN_ Haken bei "Aus Datei" ist.
-Klicke anschließend auf Okay. Wenn dein Bot bereits läuft siehst du nun das todo Panel.
-
-
-## Konfiguration / config files
+## Configuration / Config Files
 
 ### channels.csv
 
-Alle Channels, denen zugehört werden soll, werden hier aufgelistet (durch _Absätze_ getrennt). (wichtig die channel logins, also alles kleingeschrieben (und UTF-8))
-Diese können einfach mit dem editor deines Vertrauens verändert werden.
+This file lists all channels to be monitored (separated by _line breaks_). Make sure to use lowercase channel logins (UTF-8 encoded).  
+It can be edited with any text editor.
 
-#### Beispiel
+#### Example
 
 ```csv
 thebiggreekschach
@@ -53,30 +52,25 @@ lotnisko7
 ```
 
 ### credentials.json
+This file stores the static login credentials unencrypted in JSON format.
+You need to obtain these credentials yourself from Twitch.
 
-Hier werden die statischen Anmeldedaten _unverschlüsselt_ gespeichert im json Format.
-Diese musst du selbst bei Twitch holen.
-
-#### Beispiel
-
+#### Example
 ```json
 {
-  "login": "meintollertodobot",
-  "token": "3247z89cefjnkernf44gmnk5ozt590"
+  "login": "mynicetodobot",
+  "token": "SomeChars"
 }
 ```
 
 ### mods.json
+This file specifies all mods (in lowercase and UTF-8 encoded) who can reset the ToDo bot or save data to the disk, in JSON format.
+It can be edited with any text editor.
 
-Hier werden alle mods (in Kleinbuchstaben und UTF-8 codiert), die den todo-bot resetten können oder die Daten auf der Festplatte abspeichern können im json Format angegeben.
-Diese können einfach mit dem editor deines Vertrauens verändert werden.
-
-#### Beispiel
-
+#### Example
 ```json
 ["vanimio", "broncosorestore"]
 ```
 
 ### todos.json
-
-hier werden alle todos hinterlegt, die Datei sollte nicht verändert werden.
+This file stores all ToDos. This file should not be edited manually.
