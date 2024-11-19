@@ -27,7 +27,12 @@ use crate::{
     config::ModSet,
 };
 
-const ROOT_PAGE: &str = include_str!("./index.html");
+const ROOT_PAGE: &str = if cfg!(feature = "de") {
+    include_str!("./index_de.html")
+} else {
+    include_str!("./index_en.html")
+};
+
 const TODOS_PAGE: &str = include_str!("./todos.html");
 
 pub fn spawn_axum_worker<T: Transport, C: LoginCredentials>(

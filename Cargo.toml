@@ -18,6 +18,6 @@ tower-http = { version = "0.6.1", features = ["cors"] }
 twitch-irc = "5.0.*"
 
 [features]
-default = ["de"]
-en = []
+default = []
 de = []
+en = []
