@@ -4,6 +4,7 @@ use std::time::Duration;
 use channel_joiner::ChannelJoiner;
 use client_sender::{spawn_sender_worker, ClientSender};
 use config::{load_data, save_data, CredentialsFile, ModSet};
+use log::LevelFilter;
 use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Root};
 use log4rs::encode::pattern::PatternEncoder;
@@ -38,13 +39,14 @@ pub async fn async_main() {
         .encoder(Box::new(PatternEncoder::new("{l} - {m}\n")))
         .build("log/output.log")
         .unwrap();
+    let log_level = if cfg!(debug_assertions) {
+        LevelFilter::Trace
+    } else {
+        LevelFilter::Info
+    };
     let config = log4rs::Config::builder()
         .appender(Appender::builder().build("logfile", Box::new(logfile)))
-        .build(
-            Root::builder()
-                .appender("logfile")
-                .build(log::LevelFilter::Trace),
-        )
+        .build(Root::builder().appender("logfile").build(log_level))
         .unwrap();
     log4rs::init_config(config).unwrap();
 
